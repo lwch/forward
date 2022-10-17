@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 
@@ -49,13 +50,20 @@ func main() {
 func forward(local net.Conn, addr string, port uint16) {
 	defer local.Close()
 	ip, err := net.ResolveIPAddr("ip", addr)
-	runtime.Assert(err)
+	if err != nil {
+		log.Printf("resolve: %v", err)
+		return
+	}
 	remote, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   ip.IP,
 		Port: int(port),
 		Zone: ip.Zone,
 	})
-	runtime.Assert(err)
+	if err != nil {
+		log.Printf("dial: %v", err)
+		return
+	}
+	defer remote.Close()
 	go io.Copy(remote, local)
 	io.Copy(local, remote)
 }
